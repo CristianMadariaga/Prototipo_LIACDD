@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- Cargar d3.js -->
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <!-- Cargar d3-cloud -->
+    <script src="https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/LIB/d3.layout.cloud.js"></script>
+</head>
+<style>
+    body {
+        align-items: center;
+        justify-content: center;
+        display: flex;
+        min-height: 100vh;
+        overflow: hidden;
+        animation: fadeInAnimation ease 1s;
+        animation-iteration-count: 1;
+        animation-fill-mode: forwards;
+
+    }
+
+    @keyframes fadeInAnimation {
+        0% {
+            opacity: 0;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    .custom-file-upload {
+        background: linear-gradient(90deg, #f12711, #f5af19);
+        color: white;
+        border: none;
+        padding: 20px 40px;
+        border-radius: 50px;
+        font-weight: 100;
+        font-size: 1rem;
+        display: inline-block;
+        padding: 6px 12px;
+        cursor: pointer;
+        transition: all .3s;
+        text-align: center;
+
+        &:hover {
+            scale: 105%;
+        }
+    }
+
+    .botones {
+        display: grid;
+        grid-template-rows: auto auto;
+        row-gap: 2rem;
+    }
+
+    .tooltip {
+        position: absolute;
+        display: none;
+        background-color: black;
+        color: white;
+        border-radius: 15px;
+        padding: 5px;
+        border: 1px solid black;
+    }
+</style>
+
+<body>
+    <div id="tooltip" class="tooltip"></div>
+    <div id="my_dataviz"></div>
+    <div id="botones" class="botones">
+        <label id="custom-file-upload" class="custom-file-upload">
+            <input type="file" id="fileInput" accept=".txt">
+            Seleccionar Archivo .txt
+        </label>
+        <label id="example" class="custom-file-upload">
+            Ejecutar Ejemplo
+        </label>
+    </div>
+</body>
+
+<script>
+    const fileInput = document.getElementById("fileInput");
+    const textfileinput = document.getElementById("botones");
+    const example = document.getElementById("example");
+
+    function eliminarfileinput() {
+        textfileinput.remove();
+    }
+
+    function limpiarPalabra(palabra) {
+        // Expresión regular para eliminar signos de puntuación
+        palabra = palabra.replace(/^[^\wáéíóúÁÉÍÓÚü]+|[^\wáéíóúÁÉÍÓÚü]+$/g, "");
+        palabra = palabra.toLowerCase();
+        return palabra
+    }
+
+    function filtrarPalabras(arrayPalabras) {
+        for (let i = 0; i < arrayPalabras.length; i++) {
+            // Limpiar la palabra antes de evaluar su longitud
+            const palabraLimpia = limpiarPalabra(arrayPalabras[i]);
+            if (palabraLimpia.length < 4) {
+                arrayPalabras.splice(i, 1);
+                i--; // Retrocede el índice para verificar el próximo elemento después de la eliminación
+            }
+            else {
+                arrayPalabras[i] = palabraLimpia; // Reemplazar la palabra en el array por la versión limpia
+            }
+        }
+        return arrayPalabras;
+    }
+
+    function generarWordCloudDesdeTexto(texto, cantidadPalabras) {
+        var palabras = texto.split(/\s+/); // Divide el texto en palabras
+        var words = filtrarPalabras(palabras);
+        var wordCount = {};
+        words.forEach(function (word) {
+            if (wordCount[word]) {
+                wordCount[word]++;
+            } else {
+                wordCount[word] = 1;
+            }
+        });
+        var wordData = Object.keys(wordCount).map(function (word) {
+            return { text: word, size: wordCount[word] };
+        });
+
+        wordData.sort(function (a, b) {
+            return b.size - a.size;
+        });
+
+        var palabrasSeleccionadas = wordData.slice(0, cantidadPalabras);
+        var wordData = palabrasSeleccionadas;
+
+        console.log(words);
+        console.log(wordCount);
+        console.log(wordData);
+
+        // Dimensiones del gráfico
+        var margin = { top: 0, right: 0, bottom: 0, left: 0 },
+            width = 600 - margin.left - margin.right,
+            height = 600 - margin.top - margin.bottom;
+
+        // Agregar el svg (Wordcloud)
+        var svg = d3.select("#my_dataviz").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        var colorPalette = [
+            '#fff100',
+            '#ff8c00',
+            '#e81123',
+            '#ec008c',
+            '#68217a',
+            '#00188f',
+            '#00bcf2',
+            '#00b294',
+            '#009e49',
+            '#bad80a',
+        ];
+
+        //Para Medir la escala segun palabras
+        var maxCount = 0;
+        var maxWord = null;
+        Object.keys(wordCount).forEach(function (word) {
+            if (wordCount[word] > maxCount) {
+                maxCount = wordCount[word];
+                maxWord = word
+            }
+        });
+        console.log(maxCount);
+        console.log(maxWord);
+
+        var escala = null;
+        if (maxCount < 50) {
+            escala = 15;
+        }
+        else if (maxCount >= 50 && maxCount < 300) {
+            escala = 0.5;
+        }
+        else if (maxCount >= 300) {
+            escala = 0.1;
+        }
+
+        // Constructs a new cloud layout instance. It runs an algorithm to find the position of words that suits your requirements
+        // Wordcloud features that are different from one word to the other must be here
+        var layout = d3.layout.cloud()
+            .size([width, height])
+            .words(wordData)
+            .font('Impact')
+            .padding(1) // espacio entre palabras
+            .rotate(function () { return 0; })
+            // .rotate(function () { return ~~(Math.random() * 2) * 90; })
+            .fontSize(function (d) { return d.size * escala; }) // Aumenta el factor de escala de fuente (ajusta según sea necesario)
+            .spiral("archimedean")
+            .on("end", draw);
+        layout.start();
+
+        // This function takes the output of 'layout' above and draws the words
+        // Wordcloud features that are THE SAME from one word to the other can be here
+        function draw(words) {
+            svg
+                .append("g")
+                .attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")
+                .selectAll("text")
+                .data(words)
+                .enter().append("text")
+                .style("font-size", function (d) { return d.size; })
+                .style("fill", function () {
+                    // Generar un índice aleatorio para seleccionar un color de la paleta
+                    var randomIndex = Math.floor(Math.random() * colorPalette.length);
+                    return colorPalette[randomIndex];
+                })
+                .attr("text-anchor", "middle")
+                .style("font-family", "Impact")
+                .attr("transform", function (d) {
+                    return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+                })
+                .style("opacity", 0) // Inicialmente, establecer la opacidad en 0
+                .text(function (d) { return d.text; })
+                .transition() // Iniciar la transición
+                .delay(function (d, i) { return i * 50; }) // Retraso para cada palabra
+                .style("opacity", 1); // Aumentar la opacidad a 1 gradualmente
+        }
+
+        var tooltip = d3.select("#tooltip");
+
+        svg.selectAll("text")
+            .on("mouseover", function (d) {
+                tooltip.style("display", "block")
+                    .html("Cantidad: " + d.size/escala)
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
+            })
+            .on("mouseout", function () {
+                tooltip.style("display", "none");
+            });
+
+    }
+
+    function cargarArchivoDeTexto(event) {
+        const archivo = event.target.files[0];
+        const lector = new FileReader();
+
+        lector.onload = function () {
+            const contenido = lector.result;
+            // Limpia el lienzo antes de generar un nuevo Word Cloud
+            d3.select("#my_dataviz").selectAll("*").remove();
+            generarWordCloudDesdeTexto(contenido, 50);
+            eliminarfileinput();
+        };
+
+        lector.readAsText(archivo);
+    }
+
+    function ejemplo(event){
+        fetch('./examples/poema.txt')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text(); // Esto convierte la respuesta en texto
+        })
+        .then(texto => {
+            generarWordCloudDesdeTexto(texto, 75);
+            eliminarfileinput(); // Por ejemplo, puedes mostrarlo en la consola
+        });
+    }
+
+    fileInput.addEventListener("change", cargarArchivoDeTexto);
+    example.addEventListener("click", ejemplo);
+</script>
+
+</html>

@@ -1,0 +1,47 @@
+{
+  "name": "Tipos de Animales",
+  "children": [
+    {
+      "name": "Mamíferos",
+      "children": [
+        {
+          "name": "Características",
+          "children": [
+            { "name": "Número de Patas", "value": 4 },
+            { "name": "Longevidad Promedio (años)", "value": 20 },
+            { "name": "Temperatura Corporal Promedio (°C)", "value": 37.5 },
+            { "name": "Ejemplos de Tamaño Corporal (kg)", "value": 500 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Aves",
+      "children": [
+        {
+          "name": "Características",
+          "children": [
+            { "name": "Número de Patas", "value": 2 },
+            { "name": "Longevidad Promedio (años)", "value": 15 },
+            { "name": "Temperatura Corporal Promedio (°C)", "value": 40 },
+            { "name": "Envergadura de Alas Promedio (cm)", "value": 150 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reptiles",
+      "children": [
+        {
+          "name": "Características",
+          "children": [
+            { "name": "Número de Patas", "value": 4 },
+            { "name": "Longevidad Promedio (años)", "value": 30 },
+            { "name": "Temperatura Corporal Promedio (°C)", "value": 30 },
+            { "name": "Tamaño Promedio (cm)", "value": 200 }
+          ]
+        }
+      ]
+    }
+  ]
+}
